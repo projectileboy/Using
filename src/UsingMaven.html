@@ -1,0 +1,803 @@
+<!DOCTYPE html>
+<!--[if lt IE 7]> <html class="no-js lt-ie9 lt-ie8 lt-ie7"> <![endif]-->
+<!--[if IE 7]> <html class="no-js lt-ie9 lt-ie8"> <![endif]-->
+<!--[if IE 8]> <html class="no-js lt-ie9"> <![endif]-->
+<!--[if gt IE 8]><!--> <html class="no-js"> <!--<![endif]-->
+<head>
+    <meta charset="utf-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge,chrome=1">
+    <title>Using Maven</title>
+    <meta name="description" content="">
+    <meta name="viewport" content="width=device-width">
+	
+    <script src="https://google-code-prettify.googlecode.com/svn/loader/run_prettify.js"></script>
+    <link rel="stylesheet" href="../css/normalize.css">
+    <link rel="stylesheet" href="../css/main.css">
+    <link href="../css/bitbakery.css" title="primary" rel="stylesheet" type="text/css"/>
+    <script src="../js/vendor/modernizr-2.6.2.min.js"></script>
+</head>
+<body>
+<!--[if lt IE 7]>
+	<p class="browsehappy">You are using an <strong>outdated</strong> browser. Please <a href="http://browsehappy.com/">upgrade your browser</a> to improve your experience.</p>
+<![endif]-->
+
+
+<div class="table-of-contents">
+    <a class="toc" href="#Maven"><b>Using Maven</b></a><br />
+    <a class="toc" href="#CreatingAProject">Creating a Project</a><br />
+    <a class="toc" href="#TheStandardProjectStructure">The Standard Project Structure</a><br />
+    <a class="toc" href="#TheProjectObjectModel">The Project Object Model</a><br />
+    <a class="toc" href="#TheMavenBuildLifecycle">The Maven Build Lifecycle</a><br />
+    <a class="toc" href="#ManagingDependencies">Managing Dependencies</a><br />
+    <a class="toc" href="#AddingBehaviorWithMavenPlugins">Adding Behavior with Maven Plugins</a><br />
+    <a class="toc" href="#Profiles">Profiles</a><br />
+    <a class="toc" href="#CreatingYourOwnMavenPlugins">Creating Your Own Maven Plugins</a><br />
+    <a class="toc" href="#ProxyConfiguration">Proxy Configuration</a><br />
+</div>
+
+
+<h1 id="Maven">Using Maven</h1>
+
+
+<p>Maven is a Java-based build tool, enabling developers to compile, test, package and deploy software. Although
+    superficially similar to other build tools like <a href="http://ant.apache.org/manual/index.html">Ant</a>, Maven
+    eliminates much of the common boilerplate code that exists in most Ant scripts, and adds additional functionality
+    above and beyond Ant - in particular, Maven adds sophisticated declarative dependency management (similar to <a
+            href="http://ant.apache.org/ivy/">Ivy</a>). As long as you follow certain conventions in how your project is
+    structured, Maven accomplishes all of this with minimal configuration.</p>
+
+<p>Maven is freely available at <a href="http://maven.apache.org">http://maven.apache.org</a>. On Windows, simply
+    download the latest binaries and unzip into your directory of choice. On Linux or Mac OS X, you may choose to simply
+    download and untar, or else use a package manager such as <a class="code">apt-get</a> or <a class="code">brew</a>.
+    After you've installed Maven, check that it's working:</p>
+
+<div class="terminal">
+<div class="term-in">> mvn -version</div>
+<div class="term-out">Apache Maven 3.0.3 (r1075438; 2011-02-28 11:31:09-0600)</div>
+</div>
+
+
+
+
+<h3 id="CreatingAProject">Creating a Project</h3>
+
+<p>We'll start by creating the sample Java project shown in <a
+        href="http://maven.apache.org/guides/getting-started/maven-in-five-minutes.html">Maven in 5 Minutes</a>:</p>
+
+<div class="terminal">
+<div class="term-in">> mvn archetype:generate -DgroupId=com.bitbakery.app -DartifactId=test-app
+   -DarchetypeArtifactId=maven-archetype-quickstart -DinteractiveMode=false</div>
+<div class="term-out">[INFO] Scanning for projects...
+Downloading: http://repo1.maven.org/maven2/org/apache/maven/plugins/maven-clean-plugin/2.4.1/maven-clean-plugin-2.4.1.pom
+Downloaded: http://repo1.maven.org/maven2/org/apache/maven/plugins/maven-clean-plugin/2.4.1/maven-clean-plugin-2.4.1.pom (5 KB at 3.8 KB/sec)</div>
+</div>
+
+<p>...and so on. As this is the first time we've ever run Maven, it must download a lot of dependencies, so let's take a
+    break from the endless stream of download messages. Go get a cup of coffee, and we'll pick up again right about...
+    here...</p>
+
+<div class="terminal">
+<div class="term-out">Downloading: http://repo1.maven.org/maven2/org/apache/maven/archetypes/maven-archetype-quickstart/1.0/maven-archetype-quickstart-1.0.pom
+Downloaded: http://repo1.maven.org/maven2/org/apache/maven/archetypes/maven-archetype-quickstart/1.0/maven-archetype-quickstart-1.0.pom (703 B at 1.7 KB/sec)
+[INFO] ----------------------------------------------------------------------------
+[INFO] Using following parameters for creating project from Old (1.x) Archetype: maven-archetype-quickstart:1.0
+[INFO] ----------------------------------------------------------------------------
+[INFO] Parameter: groupId, Value: com.bitbakery.app
+[INFO] Parameter: packageName, Value: com.bitbakery.app
+[INFO] Parameter: package, Value: com.bitbakery.app
+[INFO] Parameter: artifactId, Value: test-app
+[INFO] Parameter: basedir, Value: /Users/kurtc/dev
+[INFO] Parameter: version, Value: 1.0-SNAPSHOT
+[INFO] project created from Old (1.x) Archetype in dir: /Users/kurtc/dev/test-app
+[INFO] ------------------------------------------------------------------------
+[INFO] BUILD SUCCESS
+[INFO] ------------------------------------------------------------------------
+[INFO] Total time: 1:01.675s
+[INFO] Finished at: Fri Nov 18 16:41:46 CST 2011
+[INFO] Final Memory: 7M/81M
+[INFO] ------------------------------------------------------------------------</div>
+</div>
+
+<p>As Yogi Berra once said, "you can observe a lot just by watching." In executing this one command, we've actually
+    learned quite a bit about how Maven works:</p>
+<ul>
+    <li>Unlike Ant, where we script instructions to accomplish tasks, Maven satisfies <a class=new-term>goals</a>, which
+        are implemented within <a class=new-term>plugins</a></li>
+    <li>A plugin typically contains a number of related goals - for example, in this case we executed the <a class=code>generate</a>
+        goal packaged within the <a class=code>archetype</a> plugin</li>
+    <li>Goals are executed at a particular time within a <a class=new-term>lifecycle</a> - a lifecycle consists of <a class=new-term>phases</a>, where each phase satisfies one or more goals</li>
+    <li>Tell Maven the goal you want to achieve, and it will run through the lifecycle up to and including that goal</li>
+    <li>The lifecycle can be explicitly defined by the project, but for most Java projects, the <a class=new-term>default lifecycle</a> is what's wanted (essentially: build, test, package and deploy)</li>
+    <li>When a plugin (or your project, or Maven itself) has a dependency on something and Maven can't find it in the <a
+            class=new-term>local repository</a>, Maven downloads that dependency from a <a class=new-term>remote
+        repository</a>, and then stores that dependency in the local repository </li>
+</ul>
+
+
+
+
+<h3 id="TheStandardProjectStructure">The Standard Project Structure</h3>
+
+<p>Running the <a class="code">archetype:generate</a> goal with our input parameters generated an archetypal Java project:</p>
+
+<img src="../img/maven/DefaultMavenProject.png" height=""/>
+
+<p>This is the standard project structure for Maven projects. You can override where these things are actually located
+    by overriding defaults in the project descriptor, otherwise known as the <a class="new-term">Project Object Model
+        (POM)</a> (however, you'll find that it's much easier to use Maven when you accept how it wants to structure
+    your project). Note that Maven generated a POM (appropriately named <a class="code">pom.xml</a>) in the root of our
+    project directory tree.</p>
+
+
+<h3 id="TheProjectObjectModel">The Project Object Model</h3>
+
+<p>The POM uniquely identifies a project to Maven, describes its contents and dependencies, and specifies how it should
+be built, tested, packaged and deployed. A complicated project will understandably have a more complicated POM file,
+but let's examine what we have thus far:</p>
+
+<div class="terminal">
+<div class="term-in">> cd ~/dev/test-app
+> vim pom.xml</div>
+</div>
+<pre class="prettyprint"><div class="pre-padding">&lt;project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/maven-v4_0_0.xsd"&gt;
+    &lt;modelVersion&gt;4.0.0&lt;/modelVersion&gt;
+    &lt;groupId&gt;com.bitbakery.app&lt;/groupId&gt;
+    &lt;artifactId&gt;test-app&lt;/artifactId&gt;
+    &lt;packaging&gt;jar&lt;/packaging&gt;
+    &lt;version&gt;1.0-SNAPSHOT&lt;/version&gt;
+    &lt;name&gt;test-app&lt;/name&gt;
+    &lt;url&gt;http://dev.the-super-test-app.com&lt;/url&gt;
+    &lt;dependencies&gt;
+        &lt;dependency&gt;
+            &lt;groupId&gt;junit&lt;/groupId&gt;
+            &lt;artifactId&gt;junit&lt;/artifactId&gt;
+            &lt;version&gt;3.8.1&lt;/version&gt;
+            &lt;scope&gt;test&lt;/scope&gt;
+        &lt;/dependency&gt;
+    &lt;/dependencies&gt;
+&lt;/project&gt;</div></pre>
+
+<p>OK... so what are we looking at?</p>
+
+<table>
+    <tr>
+        <td><a class=code>modelVersion</a></td>
+        <td>Specifies the version of the Maven POM specification to which this POM file conforms</td>
+    </tr>
+    <tr>
+        <td><a class=code>groupId</a><br/><a class=code>artifactId</a><br/><a class=code>version</a></td>
+        <td>Together provide a globally unique identifier for this project in the world of Maven (these are sometimes called the <a class=new-term>coordinates</a> of the project)</td>
+    </tr>
+    <tr>
+        <td><a class=code>name</a></td>
+        <td>Enables us to give the project a more descriptiive name than what we specify for the <a class="code">artifactId</a></td>
+    <tr>
+        <td><a class=code>packaging</a></td>
+        <td>Tells Maven how we would like our project to be packaged - built-in options include
+            <a class="code">pom</a>, <a class="code">jar</a>, <a class="code">maven-plugin</a>, <a class="code">ejb</a>,
+            <a class="code">war</a>, <a class="code">ear</a>, <a class="code">rar</a>, <a class="code">par</a>
+             (the default is <a class="code">jar</a>)</td>
+    </tr>
+    <tr>
+        <td><a class=code>url</a></td>
+        <td>The home page for the project</td>
+    </tr>
+    <tr>
+        <td><a class=code>dependencies</a></td>
+        <td>Specifies the Maven coordinates for any projects on which this project depends</td>
+    </tr>
+</table>
+
+<p>Using the information in the POM, Maven determines how to build the project. As a concrete example, in order to make
+    our build artifacts more platform-independent, let's add a <a class="new-term">property</a> entry to our POM to tell
+    Maven to use UTF-8 encoding:</p>
+
+<div class="terminal">
+<div class="term-in">> vim pom.xml</div>
+</div>
+<pre class="prettyprint"><div class="pre-padding">&lt;project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/maven-v4_0_0.xsd"&gt;
+    &lt;modelVersion&gt;4.0.0&lt;/modelVersion&gt;
+    &lt;groupId&gt;com.bitbakery.app&lt;/groupId&gt;
+    &lt;artifactId&gt;test-app&lt;/artifactId&gt;
+    &lt;packaging&gt;jar&lt;/packaging&gt;
+    &lt;version&gt;1.0-SNAPSHOT&lt;/version&gt;
+    &lt;name&gt;test-app&lt;/name&gt;
+    &lt;url&gt;http://maven.apache.org&lt;/url&gt;
+    <a class="pre-highlight">&lt;properties&gt;</a>
+        <a class="pre-highlight">&lt;project.build.sourceEncoding&gt;UTF-8&lt;/project.build.sourceEncoding&gt;</a>
+    <a class="pre-highlight">&lt;/properties&gt;</a>
+    &lt;dependencies&gt;
+        &lt;dependency&gt;
+            &lt;groupId&gt;junit&lt;/groupId&gt;
+            &lt;artifactId&gt;junit&lt;/artifactId&gt;
+            &lt;version&gt;3.8.1&lt;/version&gt;
+            &lt;scope&gt;test&lt;/scope&gt;
+        &lt;/dependency&gt;
+    &lt;/dependencies&gt;
+&lt;/project&gt;</div></pre>
+
+<p>Any Maven plugin which generates text files will now output UTF-8 encoded text.</p>
+
+<h3 id="TheMavenBuildLifecycle">The Maven Build Lifecycle</h3>
+
+<p>Maven defines a default lifecycle for projects (from "<a href="http://maven.apache.org/guides/introduction/introduction-to-the-lifecycle.html">Introduction to the [Maven] Build Cycle</a>"):
+<table>
+<tr><td>1</td><td width="110px">validate</td><td>Validates the project is correct and all necessary information is available</td></tr>
+<tr><td>2</td><td>compile</td><td>Compiles the source code of the project</td></tr>
+<tr><td>3</td><td>test</td><td>Tests the compiled source code using a suitable unit testing framework. These tests should not require the code be packaged or deployed</td></tr>
+<tr><td>4</td><td>package</td><td>Takes the compiled code and package it in its distributable format, such as a JAR.</td></tr>
+<tr><td>5</td><td>integration-test</td><td>Processes and deploys the package if necessary into an environment where integration tests can be run</td></tr>
+<tr><td>6</td><td>verify</td><td>Runs any checks to verify the package is valid and meets quality criteria</td></tr>
+<tr><td>7</td><td>install</td><td>Installs the package into the local repository, for use as a dependency in other projects locally</td></tr>
+<tr><td>8</td><td>deploy</td><td>When run in an integration or release environment, this typically copies the final package to the remote repository for sharing with other developers and projects</td></tr>
+</table>
+</p>
+
+<p>As a sanity check for our newly-generated project, let's tell Maven to package our project, and observe the relationship
+between the default lifecycle and what's specified in our POM file. Since this is the first time we've packaged anything
+with Maven, we'll once again download a lot of dependencies, so in the interest of brevity, we'll actually run our package
+goal twice (cleaning up after the first run), and only examine the output of the second run:</p>
+
+<div class="terminal">
+<div class="term-in">> mvn package clean</div>
+</div>
+
+<div class="terminal">
+<div class="term-in">> mvn package</div>
+<div class="term-out">[INFO] Scanning for projects...
+[INFO]
+[INFO] ------------------------------------------------------------------------
+[INFO] Building test-app 1.0-SNAPSHOT
+[INFO] ------------------------------------------------------------------------
+[INFO]
+[INFO] --- maven-resources-plugin:2.4.3:resources (default-resources) @ test-app ---
+[INFO] Using 'UTF-8' encoding to copy filtered resources.
+[INFO] skip non existing resourceDirectory /Users/kurtc/dev/test-app/src/main/resources
+[INFO]
+[INFO] --- maven-compiler-plugin:2.3.2:compile (default-compile) @ test-app ---
+[INFO] Compiling 1 source file to /Users/kurtc/dev/test-app/target/classes
+[INFO]
+[INFO] --- maven-resources-plugin:2.4.3:testResources (default-testResources) @ test-app ---
+[INFO] Using 'UTF-8' encoding to copy filtered resources.
+[INFO] skip non existing resourceDirectory /Users/kurtc/dev/test-app/src/test/resources
+[INFO]
+[INFO] --- maven-compiler-plugin:2.3.2:testCompile (default-testCompile) @ test-app ---
+[INFO] Compiling 1 source file to /Users/kurtc/dev/test-app/target/test-classes
+[INFO]
+[INFO] --- maven-surefire-plugin:2.7.2:test (default-test) @ test-app ---
+[INFO] Surefire report directory: /Users/kurtc/dev/test-app/target/surefire-reports
+
+-------------------------------------------------------
+ T E S T S
+-------------------------------------------------------
+Running com.bitbakery.app.AppTest
+Tests run: 1, Failures: 0, Errors: 0, Skipped: 0, Time elapsed: 0.007 sec
+
+Results :
+
+Tests run: 1, Failures: 0, Errors: 0, Skipped: 0
+
+[INFO]
+[INFO] --- maven-jar-plugin:2.3.1:jar (default-jar) @ test-app ---
+[INFO] Building jar: /Users/kurtc/dev/test-app/target/test-app-1.0-SNAPSHOT.jar
+[INFO] ------------------------------------------------------------------------
+[INFO] BUILD SUCCESS
+[INFO] ------------------------------------------------------------------------
+[INFO] Total time: 1.685s
+[INFO] Finished at: Tue Dec 13 14:37:48 CST 2011
+[INFO] Final Memory: 9M/81M
+[INFO] ------------------------------------------------------------------------</div>
+</div>
+
+<p>We see that Maven executed those portions of the default lifecycle which were applicable to our project. Note that we
+    do not have to run through the entire lifecycle every time - we can choose other goals. Some goals may be utility
+    goals completely outside of the normal lifecycle, or sometimes we may choose to run through only part of the
+    lifecycle:</p>
+
+<div class="terminal">
+<div class="term-in">> mvn clean</div>
+<div class="term-out">[INFO] Scanning for projects...
+[INFO]
+[INFO] ------------------------------------------------------------------------
+[INFO] Building test-app 1.0-SNAPSHOT
+[INFO] ------------------------------------------------------------------------
+[INFO]
+[INFO] --- maven-clean-plugin:2.5:clean (default-clean) @ test-app ---
+[INFO] ------------------------------------------------------------------------
+[INFO] BUILD SUCCESS
+[INFO] ------------------------------------------------------------------------
+[INFO] Total time: 0.257s
+[INFO] Finished at: Wed Dec 14 16:20:41 CST 2011
+[INFO] Final Memory: 3M/81M
+[INFO] ------------------------------------------------------------------------</div>
+</div>
+
+
+
+<h3 id="ManagingDependencies">Managing Dependencies</h3>
+
+<p>Our generated POM file included a single dependency: JUnit 3.8.1. Although we ignored it above, if you happened
+    to look closely at the output when you ran <a class=code>mvn package</a> for the very first time, you may have
+    noticed this output:</p>
+
+<div class="terminal">
+<div class="term-out">Downloading: http://repo1.maven.org/maven2/junit/junit/3.8.1/junit-3.8.1.pom
+Downloaded: http://repo1.maven.org/maven2/junit/junit/3.8.1/junit-3.8.1.pom (998 B at 2.0 KB/sec)
+Downloading: http://repo1.maven.org/maven2/junit/junit/3.8.1/junit-3.8.1.jar
+Downloaded: http://repo1.maven.org/maven2/junit/junit/3.8.1/junit-3.8.1.jar (119 KB at 212.3 KB/sec)</div>
+</div>
+
+<p>Maven did this because the dependencies declaration in our POM file told Maven that we needed JUnit 3.8.1, and we
+    didn't already have it in our local repository:</p>
+
+<div class="terminal">
+    <div class="term-in">> vim pom.xml</div>
+</div>
+<pre class="prettyprint"><div class="pre-padding">&lt;project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+        xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/maven-v4_0_0.xsd"&gt;
+    &lt;modelVersion&gt;4.0.0&lt;/modelVersion&gt;
+    &lt;groupId&gt;com.bitbakery.app&lt;/groupId&gt;
+    &lt;artifactId&gt;test-app&lt;/artifactId&gt;
+    &lt;packaging&gt;jar&lt;/packaging&gt;
+    &lt;version&gt;1.0-SNAPSHOT&lt;/version&gt;
+    &lt;name&gt;test-app&lt;/name&gt;
+    &lt;url&gt;http://maven.apache.org&lt;/url&gt;
+    &lt;properties&gt;
+        &lt;project.build.sourceEncoding&gt;UTF-8&lt;/project.build.sourceEncoding&gt;
+    &lt;/properties&gt;
+    <a class="pre-highlight">&lt;dependencies&gt;</a>
+        <a class="pre-highlight">&lt;dependency&gt;</a>
+            <a class="pre-highlight">&lt;groupId&gt;junit&lt;/groupId&gt;</a>
+            <a class="pre-highlight">&lt;artifactId&gt;junit&lt;/artifactId&gt;</a>
+            <a class="pre-highlight">&lt;version&gt;3.8.1&lt;/version&gt;</a>
+            <a class="pre-highlight">&lt;scope&gt;test&lt;/scope&gt;</a>
+        <a class="pre-highlight">&lt;/dependency&gt;</a>
+    <a class="pre-highlight">&lt;/dependencies&gt;</a>
+&lt;/project&gt;</div></pre>
+
+<p>Furthermore, if JUnit itself had required any dependencies that we didn't already have in our local repository, Maven
+    would have fetched those as well, and so on. But how did Maven know where to look for these dependencies? Maven will
+    first look for dependencies in the local repository, which by default is located in <a class=code>~/.m2/repository</a>
+    (as with most things in Maven, this can be customized - the location of the local repository can be specified in <a class=code>~/.m2/settings.xml</a>).
+    The local repository contains the actual library files (jar files, usually) as well as POM files for those libraries:</p>
+
+<div class="terminal">
+<div class="term-in">> ls -lAp ~/.m2/repository/junit/junit/3.8.1</div>
+<div class="term-out">total 272
+-rw-r--r--  1 kurtc  staff     176 Nov 20 16:05 _maven.repositories
+-rw-r--r--  1 kurtc  staff  121070 Nov 20 16:05 junit-3.8.1.jar
+-rw-r--r--  1 kurtc  staff      40 Nov 20 16:05 junit-3.8.1.jar.sha1
+-rw-r--r--  1 kurtc  staff     998 Nov 20 16:05 junit-3.8.1.pom
+-rw-r--r--  1 kurtc  staff      58 Nov 20 16:05 junit-3.8.1.pom.sha1</div>
+</div>
+
+<p>If Maven can't find a required dependency in the local repository, then by default it will then look in the Maven
+    <a class="new-term">central repository</a>, which contains virtually every third-party Maven plugin that you might
+    want. The central repository is at http://repo1.maven.org/maven2, which is defined in the <a class="new-term"
+    href="http://maven.apache.org/guides/introduction/introduction-to-the-pom.html#Super_POM">Super POM</a>, but can be
+    overridden if necessary - either in your project's POM file, or else in your local <a class="code">settings.xml</a>
+    file. The central repository is helpful when working on an open source project, but when working in a corporate
+    environment, you'll typically use an internal repository (such as <a href="http://www.jfrog.com/home/">Artifactory</a>
+    or <a href="http://www.sonatype.org/nexus/">Nexus</a>), specified in the project POM file:</p>
+
+<div class="terminal">
+    <div class="term-in">> vim pom.xml</div>
+</div>
+<pre class="prettyprint"><div class="pre-padding">&lt;project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/maven-v4_0_0.xsd"&gt;
+    &lt;modelVersion&gt;4.0.0&lt;/modelVersion&gt;
+    &lt;groupId&gt;com.bitbakery.app&lt;/groupId&gt;
+    &lt;artifactId&gt;test-app&lt;/artifactId&gt;
+    &lt;packaging&gt;jar&lt;/packaging&gt;
+    &lt;version&gt;1.0-SNAPSHOT&lt;/version&gt;
+    &lt;name&gt;test-app&lt;/name&gt;
+    &lt;url&gt;http://maven.apache.org&lt;/url&gt;
+    &lt;properties&gt;
+        &lt;project.build.sourceEncoding&gt;UTF-8&lt;/project.build.sourceEncoding&gt;
+    &lt;/properties&gt;
+    &lt;dependencies&gt;
+        &lt;dependency&gt;
+            &lt;groupId&gt;junit&lt;/groupId&gt;
+            &lt;artifactId&gt;junit&lt;/artifactId&gt;
+            &lt;version&gt;3.8.1&lt;/version&gt;
+            &lt;scope&gt;test&lt;/scope&gt;
+        &lt;/dependency&gt;
+    &lt;/dependencies&gt;
+    <a class="pre-highlight">&lt;repositories&gt;</a>
+        <a class="pre-highlight">&lt;repository&gt;</a>
+            <a class="pre-highlight">&lt;id&gt;my-internal-site&lt;/id&gt;</a>
+            <a class="pre-highlight">&lt;url&gt;http://myserver/repo&lt;/url&gt;</a>
+        <a class="pre-highlight">&lt;/repository&gt;</a>
+    <a class="pre-highlight">&lt;/repositories&gt;</a>
+&lt;/project&gt;</div></pre>
+
+<p>An internal repository will contain other internal projects on which your project depends, and can also mirror
+    external third-party dependencies.</p>
+
+<p>We usually require precise control over our dependency versions, but sometimes it's not necessary. Maven allows us to
+    specify a <a class="new-term">version range</a>, which can even be open-ended. For example, if we wanted to use
+    JUnit version 3.8.1 or higher, in our POM file we could specify:</p>
+
+<div class="terminal">
+    <div class="term-in">> vim pom.xml</div>
+</div>
+<pre class="prettyprint"><div class="pre-padding">&lt;project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+          xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/maven-v4_0_0.xsd"&gt;
+        &lt;modelVersion&gt;4.0.0&lt;/modelVersion&gt;
+    &lt;groupId&gt;com.bitbakery.app&lt;/groupId&gt;
+    &lt;artifactId&gt;test-app&lt;/artifactId&gt;
+    &lt;packaging&gt;jar&lt;/packaging&gt;
+    &lt;version&gt;1.0-SNAPSHOT&lt;/version&gt;
+    &lt;name&gt;test-app&lt;/name&gt;
+    &lt;url&gt;http://maven.apache.org&lt;/url&gt;
+    &lt;properties&gt;
+    &lt;project.build.sourceEncoding&gt;UTF-8&lt;/project.build.sourceEncoding&gt;
+    &lt;/properties&gt;
+    &lt;dependencies&gt;
+        &lt;dependency&gt;
+            &lt;groupId&gt;junit&lt;/groupId&gt;
+            &lt;artifactId&gt;junit&lt;/artifactId&gt;
+            <a class="pre-highlight">&lt;version&gt;[3.8.1,)&lt;/version&gt;</a>
+            &lt;scope&gt;test&lt;/scope&gt;
+        &lt;/dependency&gt;
+    &lt;/dependencies&gt;
+&lt;/project&gt;</div></pre>
+
+<p>Note that this will download <i>all</i> of the versions of JUnit between 3.8.1 and the most current, but will then
+    use the most current version.</p>
+
+
+
+
+<h3 id="AddingBehaviorWithMavenPlugins">Adding Behavior with Maven Plugins</h3>
+
+<p>What we've seen thus far will service the needs of most Java projects. But sometimes we'll need more than what a
+    standard Maven installation provides; a good example would be the generation of any platform-specific configuration
+    files. To accomplish this, within our POM we must specify (and configure) a plugin which can accomplish this goal.
+    For example, let's add the <a href="http://www.eclemma.org/jacoco/trunk/doc/">Jacoco</a> Maven plugin to tell us
+    what kind of code coverage we're getting from our unit testing:</p>
+
+
+<div class="terminal">
+<div class="term-in">> vi pom.xml</div>
+</div>
+
+<pre class="prettyprint"><div class="pre-padding">&lt;?xml version="1.0"?&gt;
+&lt;project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/maven-v4_0_0.xsd"&gt;
+    &lt;modelVersion&gt;4.0.0&lt;/modelVersion&gt;
+    &lt;groupId&gt;com.bitbakery.app&lt;/groupId&gt;
+    &lt;artifactId&gt;test-app&lt;/artifactId&gt;
+    &lt;packaging&gt;jar&lt;/packaging&gt;
+    &lt;version&gt;1.0-SNAPSHOT&lt;/version&gt;
+    &lt;name&gt;test-app&lt;/name&gt;
+    &lt;url&gt;http://maven.apache.org&lt;/url&gt;
+    &lt;properties&gt;
+        &lt;project.build.sourceEncoding&gt;UTF-8&lt;/project.build.sourceEncoding&gt;
+    &lt;/properties&gt;
+    &lt;dependencies&gt;
+        &lt;dependency&gt;
+            &lt;groupId&gt;junit&lt;/groupId&gt;
+            &lt;artifactId&gt;junit&lt;/artifactId&gt;
+            &lt;version&gt;[3.8.1,)&lt;/version&gt;
+            &lt;scope&gt;test&lt;/scope&gt;
+        &lt;/dependency&gt;
+    &lt;/dependencies&gt;
+    <a class="pre-highlight">&lt;build&gt;</a>
+        <a class="pre-highlight">&lt;plugins&gt;</a>
+            <a class="pre-highlight">&lt;plugin&gt;</a>
+            <a class="pre-highlight">&lt;groupId&gt;org.jacoco&lt;/groupId&gt;</a>
+            <a class="pre-highlight">&lt;artifactId&gt;jacoco-maven-plugin&lt;/artifactId&gt;</a>
+            <a class="pre-highlight">&lt;version&gt;0.6.3.201306030806&lt;/version&gt;</a>
+            <a class="pre-highlight">&lt;executions&gt;</a>
+                <a class="pre-highlight">&lt;execution&gt;</a>
+                    <a class="pre-highlight">&lt;id&gt;default-prepare-agent&lt;/id&gt;</a>
+                    <a class="pre-highlight">&lt;goals&gt;</a>
+                        <a class="pre-highlight">&lt;goal&gt;prepare-agent&lt;/goal&gt;</a>
+                    <a class="pre-highlight">&lt;/goals&gt;</a>
+                <a class="pre-highlight">&lt;/execution&gt;</a>
+                <a class="pre-highlight">&lt;execution&gt;</a>
+                    <a class="pre-highlight">&lt;id&gt;default-report&lt;/id&gt;</a>
+                    <a class="pre-highlight">&lt;phase&gt;prepare-package&lt;/phase&gt;</a>
+                    <a class="pre-highlight">&lt;goals&gt;</a>
+                        <a class="pre-highlight">&lt;goal&gt;report&lt;/goal&gt;</a>
+                    <a class="pre-highlight">&lt;/goals&gt;</a>
+                <a class="pre-highlight">&lt;/execution&gt;</a>
+            <a class="pre-highlight">&lt;/executions&gt;</a>
+            <a class="pre-highlight">&lt;/plugin&gt;</a>
+        <a class="pre-highlight">&lt;/plugins&gt;</a>
+    <a class="pre-highlight">&lt;/build&gt;</a>
+&lt;/project&gt;</div></pre>
+
+<p>Within the <a class="code">build</a> element, we can bind the execution of a plugin goal to a particular phase of the build lifecycle.
+    Note that we see one execution that is not explicitly bound to a phase; in this case the execution is bound to its
+    <a class="new-term">default phase</a> (this makes sense; Jacoco can only instrument the compiled classes at a very
+    particular spot in the build lifecycle, and thus isn't meaningfully configurable).</p>
+
+<p>There can also exist a <a class="code">reporting</a> element within the POM, which is very similar to the build element, but is used for
+    goals which are run within the <a class="new-term">site</a> phase, which generates project reports and documentation. Whether plugin
+    configuration is defined in the <a class="code">build</a> or the <a class="code">reporting</a> element simply depends on the nature of the plugin.</p>
+
+<p>To see Jacoco in action, we'll first clean out any previously generated files and then package our app
+    (note that we can specify multiple Maven goals, which are satisfied in order). If this is the first time
+    you've used the Jacoco plugin, Maven will download it, along with its dependencies. What we're especially interested
+    in here, however, are the additions to the build cycle:</p>
+
+
+<div class="terminal">
+<div class="term-in">> mvn clean package</div>
+<div class="term-out">[INFO] Scanning for projects...
+[INFO]
+[INFO] ------------------------------------------------------------------------
+[INFO] Building test-app 1.0-SNAPSHOT
+[INFO] ------------------------------------------------------------------------
+[INFO]
+[INFO] --- maven-clean-plugin:2.5:clean (default-clean) @ test-app ---
+[INFO] Deleting /Users/kurtc/dev/mvn/test-app/target
+[INFO]
+<div class="term-out-highlight">[INFO] --- jacoco-maven-plugin:0.6.3.201306030806:prepare-agent (default-prepare-agent) @ test-app ---
+[INFO] argLine set to -javaagent:/Users/kurtc/.m2/repository/org/jacoco/org.jacoco.agent/0.6.3.201306030806/org.jacoco.agent-0.6.3.201306030806-runtime.jar=destfile=/Users/kurtc/Dropbox/Documents/dev/mvn/test-app/target/jacoco.exec</div>[INFO]
+[INFO] --- maven-resources-plugin:2.6:resources (default-resources) @ test-app ---
+[INFO] Using 'UTF-8' encoding to copy filtered resources.
+[INFO] skip non existing resourceDirectory /Users/kurtc/dev/mvn/test-app/src/main/resources
+[INFO]
+[INFO] --- maven-compiler-plugin:2.5.1:compile (default-compile) @ test-app ---
+[INFO] Compiling 1 source file to /Users/kurtc/dev/mvn/test-app/target/classes
+[INFO]
+[INFO] --- maven-resources-plugin:2.6:testResources (default-testResources) @ test-app ---
+[INFO] Using 'UTF-8' encoding to copy filtered resources.
+[INFO] skip non existing resourceDirectory /Users/kurtc/dev/mvn/test-app/src/test/resources
+[INFO]
+[INFO] --- maven-compiler-plugin:2.5.1:testCompile (default-testCompile) @ test-app ---
+[INFO] Compiling 1 source file to /Users/kurtc/dev/mvn/test-app/target/test-classes
+[INFO]
+[INFO] --- maven-surefire-plugin:2.12.4:test (default-test) @ test-app ---
+[INFO] Surefire report directory: /Users/kurtc/dev/mvn/test-app/target/surefire-reports
+
+-------------------------------------------------------
+T E S T S
+-------------------------------------------------------
+Running com.bitbakery.app.AppTest
+Tests run: 1, Failures: 0, Errors: 0, Skipped: 0, Time elapsed: 0.056 sec
+
+Results :
+
+Tests run: 1, Failures: 0, Errors: 0, Skipped: 0
+
+[INFO]
+<div class="term-out-highlight">[INFO] --- jacoco-maven-plugin:0.6.3.201306030806:report (default-report) @ test-app ---</div>[INFO]
+[INFO] --- maven-jar-plugin:2.4:jar (default-jar) @ test-app ---
+[INFO] Building jar: /Users/kurtc/dev/mvn/test-app/target/test-app-1.0-SNAPSHOT.jar
+[INFO] ------------------------------------------------------------------------
+[INFO] BUILD SUCCESS
+[INFO] ------------------------------------------------------------------------
+[INFO] Total time: 2.643s
+[INFO] Finished at: Mon Nov 25 17:17:58 CST 2013
+[INFO] Final Memory: 14M/81M
+[INFO] ------------------------------------------------------------------------</div>
+</div>
+
+<p>We see that by simply including the Jacoco Maven plugin as part of the build, and binding certain goals to certain
+    execution phases (while relying on the default phases for other Jacoco goals), the Jacoco plugin instrumented our
+    code, gathered coverage metrics during test execution, and generated an HTML report of our unit test code
+    coverage:</p>
+
+
+<div class="terminal">
+<div class="term-in">>ls -lAp target/site/jacoco</div>
+<div class="term-out">total 48
+drwxr-xr-x  22 kurtc  staff    748 Nov 25 17:17 .resources/
+-rw-r--r--   1 kurtc  staff  11264 Nov 25 17:17 .sessions.html
+drwxr-xr-x   5 kurtc  staff    170 Nov 25 17:17 com.bitbakery.app/
+-rw-r--r--   1 kurtc  staff   2822 Nov 25 17:17 index.html
+-rw-r--r--   1 kurtc  staff    230 Nov 25 17:17 jacoco.csv
+-rw-r--r--   1 kurtc  staff   2000 Nov 25 17:17 jacoco.xml</div>
+</div>
+
+<p>...and opening <a class="code">index.html</a> in a browser, we see our coverage report:</p>
+
+<img src="../img/maven/JacocoReport.png" height=""/>
+
+<p>(Note that this report is expected, since the JUnit test generated by Maven isn't yet actually doing anything.)</p>
+
+
+
+
+<h3 id="Profiles">Profiles</h3>
+
+<p>We probably don't want code coverage every time we build. For example, we may just want to build and deploy a small change to
+    see what it looks like when we run it. By wrapping our Jacoco configuration within a <a class="new-term">profile</a>,
+    we will only generate code coverage when we include the profilewe can choose to include the plugin's behavior (this is especially appropriate for our example; we probably don't want to generate code
+    coverage reports all of the time).</p>
+
+<div class="terminal">
+<div class="term-in">> vim pom.xml</div>
+</div>
+<pre class="prettyprint"><div class="pre-padding">&lt;?xml version="1.0"?&gt;
+&lt;project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/maven-v4_0_0.xsd"&gt;
+    &lt;modelVersion&gt;4.0.0&lt;/modelVersion&gt;
+    &lt;groupId&gt;com.bitbakery.app&lt;/groupId&gt;
+    &lt;artifactId&gt;test-app&lt;/artifactId&gt;
+    &lt;packaging&gt;jar&lt;/packaging&gt;
+    &lt;version&gt;1.0-SNAPSHOT&lt;/version&gt;
+    &lt;name&gt;test-app&lt;/name&gt;
+    &lt;url&gt;http://maven.apache.org&lt;/url&gt;
+    &lt;properties&gt;
+        &lt;project.build.sourceEncoding&gt;UTF-8&lt;/project.build.sourceEncoding&gt;
+    &lt;/properties&gt;
+    &lt;dependencies&gt;
+        &lt;dependency&gt;
+            &lt;groupId&gt;junit&lt;/groupId&gt;
+            &lt;artifactId&gt;junit&lt;/artifactId&gt;
+            &lt;version&gt;[3.8.1,)&lt;/version&gt;
+            &lt;scope&gt;test&lt;/scope&gt;
+        &lt;/dependency&gt;
+    &lt;/dependencies&gt;
+    <a class="pre-highlight">&lt;profiles&gt;</a>
+        <a class="pre-highlight">&lt;profile&gt;</a>
+            <a class="pre-highlight">&lt;id&gt;with-jacoco&lt;/id&gt;</a>
+            &lt;build&gt;
+                &lt;plugins&gt;
+                    &lt;plugin&gt;
+                        &lt;groupId&gt;org.jacoco&lt;/groupId&gt;
+                        &lt;artifactId&gt;jacoco-maven-plugin&lt;/artifactId&gt;
+                        &lt;version&gt;0.6.3.201306030806&lt;/version&gt;
+                        &lt;executions&gt;
+                            &lt;execution&gt;
+                                &lt;id&gt;default-prepare-agent&lt;/id&gt;
+                                &lt;goals&gt;
+                                    &lt;goal&gt;prepare-agent&lt;/goal&gt;
+                                &lt;/goals&gt;
+                            &lt;/execution&gt;
+                            &lt;execution&gt;
+                                &lt;id&gt;default-report&lt;/id&gt;
+                                &lt;phase&gt;prepare-package&lt;/phase&gt;
+                                &lt;goals&gt;
+                                    &lt;goal&gt;report&lt;/goal&gt;
+                                &lt;/goals&gt;
+                            &lt;/execution&gt;
+                        &lt;/executions&gt;
+                    &lt;/plugin&gt;
+                &lt;/plugins&gt;
+            &lt;/build&gt;
+        <a class="pre-highlight">&lt;/profile&gt;</a>
+    <a class="pre-highlight">&lt;/profiles&gt;</a>
+&lt;/project&gt;</div></pre>
+
+<p>...and now to generate code coverage, we simply include the profile:</p>
+
+<div class="terminal">
+<div class="term-in">> mvn clean package <a class="term-out-highlight">-Pwith-jacoco</a></div>
+<div class="term-out">[INFO] Scanning for projects...</div>
+</div>
+
+<p>...and so on - the same output that we saw previously, before we added our profile. If we were to now run <a
+        class="code">mvn clean package</a> without including our profile, Jacoco would be ignored.</p>
+
+
+<h3 id="CreatingYourOwnMavenPlugins">Creating Your Own Maven Plugins</h3>
+
+<p>Complicated projects will sometimes require complicated build steps which do not fit neatly into Maven's worldview.
+    To handle such cases, we can write our own Maven plugins, and then use them just as we would use any other Maven
+    plugin. To get started, we can use Maven to create an archetypal Maven plugin project:</p>
+
+
+<div class="terminal">
+<div class="term-in">> cd ..</div>
+<div class="term-in">> mvn archetype:generate -DgroupId=com.bitbakery.plugin -DartifactId=test-maven-plugin
+    -DarchetypeGroupId=org.apache.maven.archetypes -DarchetypeArtifactId=maven-archetype-plugin</div>
+</div>
+
+<p>...which creates a skeleton Java project for developing a Maven plugin:</p>
+
+<img src="../img/maven/DefaultMavenPluginProject.png" height=""/>
+
+<p>Looking at <a class="code">MyMojo.java</a>, we see the basic elements of the Maven plugin API:</p>
+
+<pre class="prettyprint"><div class="pre-padding">package com.bitbakery.plugin;
+
+<a class="pre-highlight">import org.apache.maven.plugin.*;</a>
+<a class="pre-highlight">import org.apache.maven.plugins.annotations.*;</a>
+import java.io.*;
+
+/**
+* Goal which touches a timestamp file.
+*/
+<a class="pre-highlight">@Mojo( name = "touch", defaultPhase = LifecyclePhase.PROCESS_SOURCES )</a>
+public class MyMojo <a class="pre-highlight">extends AbstractMojo</a> {
+
+    <a class="pre-highlight">@Parameter(defaultValue = "${project.build.directory}", property = "outputDir", required = true)</a>
+    private File outputDirectory;
+
+    <a class="pre-highlight">public void execute() throws MojoExecutionException</a> {
+        File f = outputDirectory;
+        if (!f.exists()) {
+            f.mkdirs();
+        }
+
+        File touch = new File(f, "touch.txt");
+        FileWriter w = null;
+        try {
+            w = new FileWriter(touch);
+            w.write("touch.txt");
+        } catch (IOException e) {
+            <a class="pre-highlight">throw new MojoExecutionException( "Error creating file " + touch, e );</a>
+        } finally {
+            if ( w != null ) {
+                try {
+                    w.close();
+                } catch ( IOException e ) {
+                    // ignore
+                }
+            }
+        }
+    }
+}</div></pre>
+
+<p>Maven plugin development is a topic unto itself. More information can be found at <a
+        href="http://maven.apache.org/plugin-developers/index.html">http://maven.apache.org/plugin-developers/index.html</a></p>
+
+
+<h3 id="ProxyConfiguration">Proxy Configuration</h3>
+
+<p>If we're behind a proxy server, then we'll need to configure Maven accordingly in order to download dependencies from
+    a remote repository:</p>
+
+
+<div class="terminal">
+<div class="term-in">> cd ~/.m2</div>
+<div class="term-in">> vim settings.xml</div>
+</div>
+
+<p>Enter the following (using your proper URL, port, username and password, of course) and save:</p>
+
+<pre class="prettyprint"><div class="pre-padding">&lt;settings&gt;
+  &lt;proxies&gt;
+   &lt;proxy&gt;
+      &lt;active&gt;true&lt;/active&gt;
+      &lt;protocol&gt;http&lt;/protocol&gt;
+      &lt;host&gt;proxy.somewhere.com&lt;/host&gt;
+      &lt;port&gt;8080&lt;/port&gt;
+      &lt;username&gt;proxyuser&lt;/username&gt;
+      &lt;password&gt;somepassword&lt;/password&gt;
+      &lt;nonProxyHosts&gt;www.google.com|*.somewhere.com&lt;/nonProxyHosts&gt;
+    &lt;/proxy&gt;
+  &lt;/proxies&gt;
+&lt;/settings&gt;</div></pre>
+
+<p>See <a href="http://maven.apache.org/guides/mini/guide-proxies.html">http://maven.apache.org/guides/mini/guide-proxies.html</a>
+    for more information.</p>
+<br />
+<br />
+<br />
+
+
+<script src="//ajax.googleapis.com/ajax/libs/jquery/1.10.2/jquery.min.js"></script>
+<script>window.jQuery || document.write('<script src="../js/vendor/jquery-1.10.2.min.js"><\/script>')</script>
+<script src="../js/plugins.js"></script>
+<script src="../js/main.js"></script>
+
+<!-- Google Analytics: change UA-XXXXX-X to be your site's ID. -->
+<script>
+    (function(b,o,i,l,e,r){b.GoogleAnalyticsObject=l;b[l]||(b[l]=
+    function(){(b[l].q=b[l].q||[]).push(arguments)});b[l].l=+new Date;
+    e=o.createElement(i);r=o.getElementsByTagName(i)[0];
+    e.src='//www.google-analytics.com/analytics.js';
+    r.parentNode.insertBefore(e,r)}(window,document,'script','ga'));
+    ga('create','UA-XXXXX-X');ga('send','pageview');
+</script>
+
+
+
+
+
+
+
+
+
+
+</body>
+</html>
