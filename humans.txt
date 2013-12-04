@@ -3,11 +3,11 @@
 
 # TEAM
 
-    <name> -- <role> -- <twitter>
+    Kurt Christensen -- Programmer -- @projectileboy
 
 # THANKS
 
-    <name>
+    Brian Ericson and everyone else at The Bit Bakery
 
 # TECHNOLOGY COLOPHON
 
